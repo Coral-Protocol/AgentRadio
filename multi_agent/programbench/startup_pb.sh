@@ -1,7 +1,6 @@
 #!/bin/bash
 # ProgramBench TEAM startup script — launched by the message server once per agent.
 # One script for both conditions; PB_VARIANT selects the communication rules:
-#   l25  fixed windows: MCP tools, blocking receive, silence outside windows
 #   l3   share as you go: shell scripts, background watcher (passive awareness)
 #   l3h  share as you go: shell scripts to send; a Claude Code PostToolUse hook delivers
 #        new peer messages after every tool call (harness-level passive awareness)
@@ -43,7 +42,7 @@ exec bash $PB_DIR/next_bell.sh
 WRAP_EOF
 
 # ------------------------------------------------- communication plumbing per variant
-if [ "$VARIANT" = "l25" ] || [ "$VARIANT" = "l25p" ]; then
+if [ "$VARIANT" = "l25p" ]; then
   cat > "$INSTANCE_DIR/.mcp.json" <<EOF
 { "mcpServers": { "coral": { "type": "http", "url": "$CORAL_CONNECTION_URL", "timeout": 1200000 } } }
 EOF
@@ -259,58 +258,7 @@ CLAUDE_EOF
 }
 
 # ---------------------------------------------------------------- variant sections
-if [ "$VARIANT" = "l25" ]; then
-cat >> "$INSTANCE_DIR/CLAUDE.md" <<CLAUDE_EOF
-
-## Communication: fixed windows, blocking receive (this condition)
-
-You talk to your peers ONLY through the coral MCP tools (coral_send_message,
-coral_wait_for_mention, coral_create_thread, and the coral://state resource), and ONLY
-while a window is open. The team thread is created by agent-1 at the start; find its
-id in coral://state when the first window opens.
-
-Outside a window you are SILENT: you do not send, you do not call coral_wait_for_mention,
-you do not read coral://state. You implement, and you write what you want to tell the
-team into $SCRATCH/pending.md for the next window.
-
-Windows are opened and closed by bells:
-  W1 (minute $W1O-$W1C)  split window
-  W2 (minute $W2O-$W2C) review window
-  W3 (minute $W3O-$W3C) wrap-up window
-
-Inside a window run this loop until the CLOSE bell:
-  1. Post what the window asks for (below), mentioning all peers, in the team thread.
-  2. Call coral_wait_for_mention (maxWaitMs 60000).
-  3. When it returns, read coral://state and handle every message you have not handled
-     yet (reply, review, update your plan).
-  4. Back to 2.
-Leave the loop when the CLOSE bell arrives (your bell timer finishes with it): finish the
-reply you are writing, then go silent again. If a window closes before you got what you
-needed, work around it inside your own module.
-
-Window content:
-- W1: everybody posts BRIEF. agent-1 posts the SPLIT after reading the briefs (well before
-  the window closes, even if a brief is missing). Everybody replies ACK or one concrete change.
-  agent-1 posts the final SPLIT before the window closes.
-- W2: everybody posts STATUS: DONE and CLAIM lines, FACTs, REQUESTs, FAILs collected in
-  pending.md. Then REVIEW: run at least one peer module against your own golden cases and
-  post PASS or FAIL for it. agent-1 answers every REQUEST (does the core change now, or
-  says what to do instead) and reposts the module list with owners.
-- W3: everybody posts final STATUS and open FAILs. agent-1 assigns the fixes for the
-  fix-only phase and runs the fresh-copy check.
-
-## Timeline (this condition)
-
-  0-$W1O    P0 probe, silent (agent-1 creates the team thread, no discussion yet)
-  $W1O-$W1C   W1 split window
-  $W1C-$W2O  implement, silent
-  $W2O-$W2C  W2 review window
-  $W2C-$W3O  implement, silent
-  $W3O-$W3C  W3 wrap-up window
-  $W3C-$FRZ  fix only what W3 assigned, silent
-  $FRZ-$BUDGET  FREEZE: stop editing; final snapshot at the deadline
-CLAUDE_EOF
-elif [ "$VARIANT" = "l25p" ]; then
+if [ "$VARIANT" = "l25p" ]; then
 cat >> "$INSTANCE_DIR/CLAUDE.md" <<CLAUDE_EOF
 
 ## Communication: fixed windows for discussion, share-as-you-go working phases (this condition)
@@ -449,13 +397,7 @@ LOG_FILE="$SCRIPT_DIR/instances/$CORAL_SESSION_ID/${AGENT}-claude-code.txt"
 START=$(cat "$PB_DIR/start_epoch" 2>/dev/null || date +%s)
 remaining() { echo $(( START + BUDGET * 60 - $(date +%s) )); }
 
-if [ "$VARIANT" = "l25" ]; then
-  if [ "$AGENT" = "agent-1" ]; then
-    PROMPT="Read $PB_DIR/prompt.md and your CLAUDE.md. Start the bell timer as a background task. Create the team thread named 'team' with participants agent-1,agent-2,agent-3,agent-4 and post one opening message in it mentioning everyone (just: 'team thread open, P0 in progress'). Then run P0 on your probe axis in silence, start the core skeleton, and open W1 when the bell rings."
-  else
-    PROMPT="Read $PB_DIR/prompt.md and your CLAUDE.md. Start the bell timer as a background task. Run P0 on your probe axis in silence (no MCP calls before the W1 bell). When the W1 OPEN bell rings, read coral://state to find the team thread, post your BRIEF there mentioning everyone, and run the window loop until W1 CLOSE."
-  fi
-elif [ "$VARIANT" = "l25p" ]; then
+if [ "$VARIANT" = "l25p" ]; then
   if [ "$AGENT" = "agent-1" ]; then
     PROMPT="Read $PB_DIR/prompt.md and your CLAUDE.md. Start the bell timer as a background task. Create the team thread named 'team' with participants agent-1,agent-2,agent-3,agent-4 and post one opening message in it mentioning everyone (just: 'team thread open, P0 in progress'). Then run P0 on your probe axis (you may share findings in the thread; no blocking waits before W1), start the core skeleton, and open W1 when the bell rings."
   else

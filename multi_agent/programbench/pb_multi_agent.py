@@ -3,9 +3,7 @@ Pier agent: message server + 4 Claude Code instances on ONE ProgramBench task in
 SHARED working tree, under a hard wall-clock budget, with periodic workspace snapshots
 graded offline with `programbench eval` (same grading as the B0 adapter).
 
-Two conditions, selected with ``--ak variant=l25|l3`` or the subclasses below:
-  l25  fixed communication windows (W1 split, W2 review, W3 wrap-up), MCP tools,
-       blocking receive, silence outside windows
+Conditions, selected with ``--ak variant=l25p|l3|l3h`` or the subclasses below:
   l3   share as you go, shell scripts, background watcher (passive awareness)
   l3h  share as you go, shell scripts to send; a Claude Code PostToolUse hook delivers
        new peer messages after every tool call (harness-level passive awareness)
@@ -76,20 +74,6 @@ DEFAULT_MODEL = "claude-opus-5-5"
 N_AGENTS = 4
 
 VARIANTS = {
-    "l25": {
-        "label": "L2.5 fixed windows (blocking receive)",
-        # minute -> bell text, for a 60-minute budget (scaled for other budgets)
-        "bells": [
-            (5, "W1 OPEN: split window. Post your BRIEF in the team thread; agent-1 posts the SPLIT; run the window loop until W1 CLOSE."),
-            (10, "W1 CLOSE: silent implementation until W2 (minute 30). No sends, no waits, no state reads."),
-            (30, "W2 OPEN: review window. Post STATUS (DONE/CLAIM/FACT/REQUEST/FAIL), review one peer module, agent-1 answers REQUESTs; loop until W2 CLOSE."),
-            (35, "W2 CLOSE: silent implementation until W3 (minute 50)."),
-            (45, "15 minutes left."),
-            (50, "W3 OPEN: wrap-up window. Final STATUS and open FAILs; agent-1 assigns fixes and runs the fresh-copy check; loop until W3 CLOSE."),
-            (54, "W3 CLOSE: fix only what W3 assigned, silently."),
-            (58, "FREEZE: stop editing the shared tree now. Final snapshot at the deadline."),
-        ],
-    },
     "l3": {
         "label": "L3 share as you go (passive awareness)",
         "bells": [
@@ -382,10 +366,6 @@ class ProgramBenchCoralTeam(BaseInstalledAgent):
 
     def populate_context_post_run(self, context: AgentContext) -> None:
         pass
-
-
-class ProgramBenchCoralL25(ProgramBenchCoralTeam):
-    VARIANT = "l25"
 
 
 class ProgramBenchCoralL3(ProgramBenchCoralTeam):

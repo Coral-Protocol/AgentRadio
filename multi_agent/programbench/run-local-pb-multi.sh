@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# One ProgramBench task, 4-agent team (L2.5 fixed windows, L3 share-as-you-go with a watcher,
-# or L3H share-as-you-go with hook-delivered receive), on LOCAL Docker.
-#   usage: VARIANT=l3|l25|l3h|l25p TASK=pandoc BUDGET_MIN=40 bash run-local-pb-multi.sh
+# One ProgramBench task, 4-agent team (L3 share-as-you-go with a watcher, L3H share-as-you-go
+# with hook-delivered receive, or L2.5p windows + share-as-you-go working phases), on LOCAL Docker.
+#   usage: VARIANT=l3|l3h|l25p TASK=pandoc BUDGET_MIN=40 bash run-local-pb-multi.sh
 # Token: CLAUDE_CODE_OAUTH_TOKEN env, else ~/.claude/oauth-token, else the current session
 # token from ~/.claude/.credentials.json (short-lived; must outlive the run).
 set -euo pipefail
@@ -17,11 +17,10 @@ CPUS="${CPUS:-8}"
 MEM_MB="${MEM_MB:-16384}"
 JOB_NAME="${JOB_NAME:-pb-${VARIANT}-local-${TASK}-${BUDGET_MIN}m-01}"
 case "$VARIANT" in
-  l25) CLS=ProgramBenchCoralL25 ;;
   l3)  CLS=ProgramBenchCoralL3 ;;
   l3h) CLS=ProgramBenchCoralL3H ;;
   l25p) CLS=ProgramBenchCoralL25P ;;
-  *) echo "VARIANT must be l25|l3|l3h|l25p" >&2; exit 1 ;;
+  *) echo "VARIANT must be l3|l3h|l25p" >&2; exit 1 ;;
 esac
 
 if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]]; then

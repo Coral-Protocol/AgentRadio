@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Process metrics for one ProgramBench team run (L2.5, L3, L3H or L25P).
+"""Process metrics for one ProgramBench team run (L25P, L3 or L3H).
 
 usage: python3 analyze_team.py <trial_dir> [--windows 5-10,30-35,50-54]
 
