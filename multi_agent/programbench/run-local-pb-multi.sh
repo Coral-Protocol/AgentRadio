@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One ProgramBench task, 4-agent team (L2.5 fixed windows, L3 share-as-you-go with a watcher,
 # or L3H share-as-you-go with hook-delivered receive), on LOCAL Docker.
-#   usage: VARIANT=l3|l25|l3h|l25p TASK=pandoc BUDGET_MIN=60 bash run-local-pb-multi.sh
+#   usage: VARIANT=l3|l25|l3h|l25p TASK=pandoc BUDGET_MIN=40 bash run-local-pb-multi.sh
 # Token: CLAUDE_CODE_OAUTH_TOKEN env, else ~/.claude/oauth-token, else the current session
 # token from ~/.claude/.credentials.json (short-lived; must outlive the run).
 set -euo pipefail
@@ -11,7 +11,7 @@ VARIANT="${VARIANT:-l3}"
 TASK="${TASK:-pandoc}"
 MODEL="${MODEL:-anthropic/claude-opus-5-5}"
 EFFORT="${EFFORT:-xhigh}"
-BUDGET_MIN="${BUDGET_MIN:-60}"
+BUDGET_MIN="${BUDGET_MIN:-40}"
 SNAP_MIN="${SNAP_MIN:-5}"
 CPUS="${CPUS:-8}"
 MEM_MB="${MEM_MB:-16384}"

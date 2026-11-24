@@ -105,9 +105,14 @@ BELL_TABLE="$(awk -F'\t' '{printf "  - minute %3d: %s\n", $1, $2}' "$PB_DIR/bell
 bell_min() { awk -F'\t' -v pat="$1" 'index($2, pat) == 1 {print $1; exit}' "$PB_DIR/bells.txt"; }
 W1O=$(bell_min "W1 OPEN"); W1C=$(bell_min "W1 CLOSE"); W2O=$(bell_min "W2 OPEN"); W2C=$(bell_min "W2 CLOSE")
 W3O=$(bell_min "W3 OPEN"); W3C=$(bell_min "W3 CLOSE"); FRZ=$(bell_min "FREEZE")
-# P0 length and SPLIT target scale with the budget (5 and 10 minutes of a 60-minute run)
-P0_MIN=$(( (BUDGET * 5 + 30) / 60 )); [ "$P0_MIN" -lt 1 ] && P0_MIN=1
-SPLIT_MIN=$(( (BUDGET * 10 + 30) / 60 )); [ "$SPLIT_MIN" -le "$P0_MIN" ] && SPLIT_MIN=$((P0_MIN + 1))
+# P0 ends at minute 5 and the SPLIT is due at minute 10 for every real budget (40 or 60
+# minutes, so the first ten minutes are comparable); smoke budgets under 30 min scale them.
+if [ "$BUDGET" -ge 30 ]; then
+  P0_MIN=5; SPLIT_MIN=10
+else
+  P0_MIN=$(( (BUDGET * 5 + 30) / 60 )); [ "$P0_MIN" -lt 1 ] && P0_MIN=1
+  SPLIT_MIN=$(( (BUDGET * 10 + 30) / 60 )); [ "$SPLIT_MIN" -le "$P0_MIN" ] && SPLIT_MIN=$((P0_MIN + 1))
+fi
 
 # ---------------------------------------------------------------- CLAUDE.md (shared text)
 cat > "$INSTANCE_DIR/CLAUDE.md" <<CLAUDE_EOF

@@ -27,7 +27,7 @@ Usage:
   PYTHONPATH=/home/xinxing/deep-swe CLAUDE_CODE_OAUTH_TOKEN=... pier run -p pb_tasks -i pandoc \
     --agent-import-path pb_agent.pb_multi_agent:ProgramBenchCoralL3 \
     --model anthropic/claude-opus-5-5 --env docker \
-    --ak budget_minutes=60 --ak snapshot_minutes=5 --job-name pb-l3-local-pandoc-60m-01
+    --ak budget_minutes=40 --ak snapshot_minutes=5 --job-name pb-l3-local-pandoc-40m-01
 """
 
 import json
@@ -121,6 +121,30 @@ VARIANTS["l3h"] = {
 }
 
 
+def bells_for(variant: str, budget: int) -> list[tuple[int, str]]:
+    """Bell table for a budget. The tables above are the 60-minute reference. The
+    40-minute STANDARD keeps the early bells at the same absolute minutes (BRIEF 5,
+    SPLIT / W1 CLOSE 10, so the first ten minutes are comparable with the 60-minute
+    runs) and compresses the later ones: W2 20-25, W3 33-36, FREEZE 38 (L2.5 family);
+    20 / 10 / 5 minutes left and FREEZE 38 (L3 family). Any other budget (smoke tests)
+    scales the 60-minute table proportionally."""
+    table = VARIANTS[variant]["bells"]
+    if budget == 60:
+        return list(table)
+    if budget == 40:
+        remap = {5: 5, 10: 10, 30: 20, 35: 25, 45: 30, 50: 33, 54: 36, 55: 35, 58: 38}
+        subs = [("(minute 30)", "(minute 20)"), ("(minute 50)", "(minute 33)"),
+                ("30 minutes left.", "20 minutes left."), ("15 minutes left.", "10 minutes left.")]
+        out = []
+        for minute, text in table:
+            for a, b in subs:
+                text = text.replace(a, b)
+            out.append((remap[minute], text))
+        return out
+    scale = budget / 60.0
+    return [(max(1, round(m * scale)), t) for m, t in table]
+
+
 def _agent_toml(label: str) -> str:
     return f"""edition = 3
 
@@ -156,7 +180,7 @@ class ProgramBenchCoralTeam(BaseInstalledAgent):
         logs_dir: Path,
         variant: str | None = None,
         claude_code_version: str = DEFAULT_CLAUDE_CODE_VERSION,
-        budget_minutes: int | str = 60,
+        budget_minutes: int | str = 40,
         snapshot_minutes: int | str = 5,
         effort: str = "xhigh",
         *args,
@@ -226,12 +250,7 @@ class ProgramBenchCoralTeam(BaseInstalledAgent):
             os.unlink(tmp)
 
     def _bells_text(self) -> str:
-        scale = self._budget / 60.0
-        lines = []
-        for minute, text in self._cfg["bells"]:
-            m = max(1, round(minute * scale))
-            lines.append(f"{m}\t{text}")
-        return "\n".join(lines) + "\n"
+        return "".join(f"{m}\t{t}\n" for m, t in bells_for(self._variant, self._budget))
 
     def _session_json(self) -> str:
         return json.dumps({
