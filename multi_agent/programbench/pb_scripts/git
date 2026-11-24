@@ -1,0 +1,47 @@
+#!/bin/bash
+# git guard for the shared ProgramBench tree: four agents edit /workspace at once.
+#  - refuses the subcommands that would stage or destroy a PEER's uncommitted work
+#  - serialises index writes (add/commit/rm/mv) with a lock so concurrent agents
+#    do not collide on .git/index.lock
+# Everything else is passed straight to the real git.
+REAL_GIT="${PB_REAL_GIT:-/usr/bin/git}"
+[ -x "$REAL_GIT" ] || REAL_GIT="$(PATH=/usr/local/bin:/usr/bin:/bin command -v git)"
+LOCK="${PB_GIT_LOCK:-/tmp/pb/git.lock}"
+
+refuse() { echo "git-guard: refused: $*" >&2; echo "git-guard: four agents share this tree; this command would stage or destroy a peer's uncommitted work. Stage only your own paths; to undo your own file use: git show HEAD:<path> > <path>" >&2; exit 97; }
+
+# find the subcommand (skip global options such as -C <dir> or -c k=v)
+sub=""; i=1; args=("$@")
+while [ $i -le $# ]; do
+  a="${args[$((i-1))]}"
+  case "$a" in
+    -C|-c|--git-dir|--work-tree|--namespace) i=$((i+2)); continue ;;
+    -*) i=$((i+1)); continue ;;
+    *) sub="$a"; break ;;
+  esac
+done
+rest=("${args[@]:$i}")
+
+case "$sub" in
+  add)
+    for a in "${rest[@]}"; do
+      case "$a" in -A|--all|.|:/|./|-u|--update) refuse "git add $a" ;; esac
+    done
+    exec flock -w 120 "$LOCK" "$REAL_GIT" "$@" ;;
+  commit)
+    for a in "${rest[@]}"; do
+      case "$a" in -a|--all|-am|-aM) refuse "git commit $a" ;; esac
+    done
+    exec flock -w 120 "$LOCK" "$REAL_GIT" "$@" ;;
+  rm|mv)
+    exec flock -w 120 "$LOCK" "$REAL_GIT" "$@" ;;
+  checkout|switch|restore|stash|clean|rebase|merge|cherry-pick|revert|reset)
+    # reset is allowed only for unstaging (no --hard/--merge/--keep)
+    if [ "$sub" = reset ]; then
+      for a in "${rest[@]}"; do case "$a" in --hard|--merge|--keep) refuse "git reset $a" ;; esac; done
+      exec flock -w 120 "$LOCK" "$REAL_GIT" "$@"
+    fi
+    refuse "git $sub" ;;
+  *)
+    exec "$REAL_GIT" "$@" ;;
+esac

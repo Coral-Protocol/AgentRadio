@@ -43,7 +43,10 @@ from pier.models.agent.install import AgentInstallSpec, InstallStep
 from pier.models.agent.network import NetworkAllowlist
 
 HERE = Path(__file__).parent
-MULTI_AGENT_DIR = HERE.parent / "multi_agent"
+# coral-server.jar and passive_scripts/ live in multi_agent/: a sibling of this package in
+# the deep-swe checkout (pb_agent/ next to multi_agent/), the parent directory in the
+# AgentRadio repository (multi_agent/programbench/).
+MULTI_AGENT_DIR = HERE.parent / "multi_agent" if (HERE.parent / "multi_agent" / "passive_scripts").is_dir() else HERE.parent
 CORAL_SERVER_JAR = MULTI_AGENT_DIR / "coral-server.jar"
 PASSIVE_SCRIPTS_DIR = MULTI_AGENT_DIR / "passive_scripts"
 PASSIVE_SCRIPTS = [
