@@ -71,6 +71,49 @@ single-agent leaderboard entry, Claude Code with the newer Opus 4.8 (57.2 %).
 - **2026-07** — The AgentRadio paper is released on [arXiv](https://arxiv.org/abs/2607.28430). 🎉
 - **2026-07** — Code, adapters, and the full 124-task SWE-Atlas QnA setup are open-sourced. 🚀
 
+## 🤖 OpenCode / Claude Code / Codex Integration (`.opencode/`)
+
+**EN** — This repo also ships an **opencode integration** (the `.opencode/` directory) that turns AgentRadio's protocol into a usable skill across **OpenCode**, **Claude Code**, and **Codex**. It adds everything below on top of the research harness:
+
+**KO** — 이 저장소에는 AgentRadio 프로토콜을 **OpenCode**, **Claude Code**, **Codex**에서 바로 쓸 수 있게 만드는 **opencode 통합**(`.opencode/` 디렉터리)도 포함되어 있습니다. 연구용 하네스 위에 아래 기능을 모두 추가합니다:
+
+* **Passive-awareness bus** — `plugins/agent-radio.ts` + `scripts/radio.sh` give every agent a file-based radio channel (`create-thread` / `send` / `wait_for_mention`) with **zero servers**.
+  · **수동적 인지 버스** — `plugins/agent-radio.ts` + `scripts/radio.sh`로 서버 없이 모든 에이전트가 파일 기반 라디오 채널(`create-thread` / `send` / `wait_for_mention`)을 씁니다.
+* **Universal memory store** — `plugins/memory-core.ts` + the [`tak2-08/memory`](https://github.com/tak2-08/memory) GitHub repo make long-term memory **shared by ALL sessions / agents / environments** (OpenCode, Claude Code, Codex). Portable CLI: `bin/memory.sh` (curl-install). Recall is mandatory before answering about prior work.
+  · **범용 메모리 저장소** — `plugins/memory-core.ts` + GitHub 저장소 [`tak2-08/memory`](https://github.com/tak2-08/memory)로 장기 기억을 **모든 세션/에이전트/환경**(OpenCode, Claude Code, Codex)이 공유합니다. 이식 가능한 CLI: `bin/memory.sh`(curl 설치). 이전 작업에 답하기 전 필수 회상.
+* **`/memory-dream` also plays the `/compact` role** — besides promoting daily notes to `MEMORY.md`, it writes a structured **session-compact summary** to `memory/YYYY-MM-DD.md` (and `sessions/<task-id>/compact.md` when collaborating across sessions), so the conversation can be safely truncated via the built-in `/compact` / auto-compaction and later restored with `memory_search "세션 압축"`.
+  · **`/memory-dream`이 `/compact` 역할도 함** — daily 노트를 `MEMORY.md`로 승격하는 것 외에, 현재 세션 요약을 `memory/YYYY-MM-DD.md`(세션간 협업 시 `sessions/<task-id>/compact.md`)에 기록합니다. 빌트인 `/compact`/auto-compaction으로 대화를 잘라도 `memory_search "세션 압축"`으로 복원 가능.
+* **Team Leader lifecycle** — a *Team Leader Session* talks to the boss (user), runs `/team-leader` to design the topology (1 leader + 1 proxy + N members) and emit copy-paste launch prompts, then orchestrates a hierarchical relay: `user → leader → proxy → member …`.
+  · **팀장 세션 라이프사이클** — *팀장 세션*이 boss(유저)와 대화하고, `/team-leader`를 실행해 토폴로지(팀장 1 + 대리 1 + 팀원 N)와 복붙용 시작 프롬프트를 설계한 뒤 계층적 릴레이(`user → leader → proxy → member …`)를 조율합니다.
+* **`/team-leader`** (was `/plan`) — Team Leader designs session topology + launch prompts.
+  · **`/team-leader`**(구 `/plan`) — 팀장이 세션 토폴로지 + 시작 프롬프트 설계.
+* **`/debate`** — proxy-moderated stance-based debate (수용/부정/긍정/조건부부정/공격/방어) among members; synthesis back to the leader, who may assign new work.
+  · **`/debate`** — 대리 사회자의 입장 기반 토론(수용/부정/긍정/조건부부정/공격/방어); 종합을 팀장이 받아 신규 업무를 하달.
+* **`/proxy` · `/member`** — output the Proxy / Team-Member launch prompts.
+  · **`/proxy` · `/member`** — 대리 / 팀원 시작 프롬프트 출력.
+* **`/cross-session`** — guide for cross-session collaboration (radio bus + memory store).
+  · **`/cross-session`** — 세션 간 협업 가이드(라디오 버스 + 메모리 저장소).
+* **Role templates** — `prompts/team-leader-CLAUDE.md.template`, `prompts/proxy-CLAUDE.md.template`, `prompts/member-CLAUDE.md.template` for Team Leader / Proxy / Team Member sessions.
+  · **역할 템플릿** — `prompts/team-leader-CLAUDE.md.template`, `prompts/proxy-CLAUDE.md.template`, `prompts/member-CLAUDE.md.template` (팀장 / 대리 / 팀원 세션용).
+
+### Works with `agent-shared-context`
+
+**EN** — AgentRadio integrates naturally with **[agent-shared-context](https://github.com/tak2-08/agent-shared-context)** — a token-saving inter-agent shared context DB. Use *agent-shared-context* as the structured knowledge store and *AgentRadio* as the live collaboration / orchestration layer; together they give agents both **shared memory** and **coordinated multi-agent execution**. (The agent-shared-context README likewise points back to AgentRadio as its collaboration layer.)
+
+**KO** — AgentRadio는 **[agent-shared-context](https://github.com/tak2-08/agent-shared-context)**(토큰 절약형 인터에이전트 공유 컨텍스트 DB)와 자연스럽게 결합합니다. *agent-shared-context*를 구조화된 지식 저장소로, *AgentRadio*를 실시간 협업/오케스트레이션 레이어로 쓰면, 에이전트는 **공유 기억**과 **조율된 멀티에이전트 실행**을 동시에 갖게 됩니다. (agent-shared-context README도 협업 레이어로 AgentRadio를 가리킵니다.)
+
+### Usage
+
+* **OpenCode** — the `.opencode/` folder is auto-loaded. Restart opencode; the `memory_*` and radio commands plus `/team-leader`, `/debate`, `/proxy`, `/member`, `/cross-session` are available. The plugin syncs memory to `tak2-08/memory` (set `AGENT_MEMORY_REPO` / `AGENT_MEMORY_LOCAL` / `AGENT_MEMORY_NS` to override).
+  · **OpenCode** — `.opencode/` 폴더가 자동 로드됩니다. opencode를 재시작하면 `memory_*` 및 라디오 명령, `/team-leader`·`/debate`·`/proxy`·`/member`·`/cross-session`를 쓸 수 있습니다. 플러그인이 메모리를 `tak2-08/memory`에 동기화합니다(`AGENT_MEMORY_REPO` / `AGENT_MEMORY_LOCAL` / `AGENT_MEMORY_NS`로 오버라이드).
+* **Claude Code** — copy `skills/agent-radio` and `skills/memory-core` into `~/.claude/skills/`, and install the portable store with `bin/memory.sh` (curl-install). Drop the role templates into your `CLAUDE.md` or a skill.
+  · **Claude Code** — `skills/agent-radio`와 `skills/memory-core`를 `~/.claude/skills/`에 복사하고, 이식 가능한 저장소는 `bin/memory.sh`(curl 설치)로 설치. 역할 템플릿은 `CLAUDE.md`나 스킬에 넣습니다.
+* **Codex** — same as Claude Code: copy the skills into `~/.codex/skills/` (or your codex skills dir) and install `bin/memory.sh`.
+  · **Codex** — Claude Code와 동일: 스킬을 `~/.codex/skills/`(또는 codex 스킬 디렉터리)에 복사하고 `bin/memory.sh`를 설치.
+
+See `skills/agent-radio/SKILL.md` for the full protocol, and `skills/memory-core/SKILL.md` for the memory system.
+(자세한 프로토콜은 `skills/agent-radio/SKILL.md`, 메모리 시스템은 `skills/memory-core/SKILL.md` 참조.)
+
 ## 💡 Why AgentRadio
 
 * **Communication stops costing work** — `wait_for_mention` runs as a *background task* of
@@ -155,6 +198,12 @@ run_config/qa/
   full_run.sh                     B0 baseline batch runner (all 124 tasks)
   run_passive_multi_agent.sh      L3 batch runner
 verify_local.py                   rubric verifier (LLM judge), run locally on a trial dir
+
+.opencode/                         OpenCode/Claude Code/Codex integration (see "OpenCode / Claude
+                                   Code / Codex Integration" above): passive radio bus, universal
+                                    memory store, /team-leader /debate /proxy /member /cross-session commands,
+                                   team-leader/proxy/member role templates, and the memory-core
+                                   plugin synced to the tak2-08/memory GitHub repo.
 ```
 
 Every task directory under `data/qa/` carries the instruction, the pinned execution
