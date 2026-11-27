@@ -50,6 +50,10 @@ This repository contains the code and data to reproduce the experiments of the p
 
 ### 🏆 One protocol, four agents — +29.8 points over a single agent
 
+**Main results: codebase understanding on SWE-Atlas QnA.** 124 questions over 11 production
+repositories; to answer, the agents must build, run and trace the code. Scores are task
+accuracy (all rubrics of a task passed), one run per configuration.
+
 | Configuration | What it adds | Task acc. (Opus 4.6) | Task acc. (DeepSeek V4 Pro) |
 |---|---|:---:|:---:|
 | **B0** single agent | — | 32.3 % | 29.0 % |
@@ -64,6 +68,30 @@ with Opus 4.6 (exact McNemar test, p = 0.0023) and wins 17 while losing 3 with D
 single-agent leaderboard entry, Claude Code with the newer Opus 4.8 (57.2 %).
 
 → [See the full results](#-results) · [paper](https://arxiv.org/abs/2607.28430) · [run it yourself](#-running-the-four-configurations)
+
+### 🧪 Supplementary experiment — building a codebase from scratch (ProgramBench)
+
+A different kind of task: on [ProgramBench](https://programbench.com) the team starts from an
+empty repository and must write a whole program, graded by hidden tests (no LLM judge). We ran
+two hard tasks, **pandoc** and **ctags**, with a 40-minute wall-clock budget, Claude Code with
+Opus 5.5, and graded a snapshot every 5 minutes. Three configurations: a single Claude Code
+agent; four agents under **L2.5** (the L3 "share as you go" prompt, but agents read the shared
+worklog themselves instead of a background watcher, i.e. polled shared memory); and four agents
+under **L3** (AgentRadio, passive awareness).
+
+| Hidden-test pass rate at 40 min | Single agent | L2.5 (polled) | L3 (AgentRadio) |
+|---|:---:|:---:|:---:|
+| pandoc | 21.3 % | 34.5 % | **37.2 %** |
+| ctags | 30.3 % | 39.9 % | **43.5 %** |
+
+<p align="center">
+  <img src="figures/pb_curves_0-40min.png" alt="ProgramBench: hidden-test pass rate over the first 40 minutes, pandoc and ctags" width="100%">
+</p>
+
+L3 reaches 22.5 % on both tasks by minute 10, when L2.5 is still at 5.1 % / 2.4 %: the same
+messages, delivered at the next step boundary instead of when an agent decides to look, pay off
+earliest. One run per cell. Code: [`multi_agent/programbench/`](multi_agent/programbench/),
+figure script: [`figures/plot_pb_curves.py`](figures/plot_pb_curves.py).
 
 ## 📣 News
 
@@ -150,6 +178,9 @@ multi_agent/
                                   send_message / wait_for_mention / read_resource)
   coral-server.jar                message server (download from Releases, see below)
   monitor_coral_log.sh            live thread/message monitor for running containers
+  programbench/                   ProgramBench team runtime (L2.5 / L3 variants, 40-min budget,
+                                  5-min snapshots) for the supplementary from-scratch experiment
+figures/                          ProgramBench curves (pb_curves_0-40min.png) and their script
 run_config/qa/
   claude-token                    OAuth token helper
   full_run.sh                     B0 baseline batch runner (all 124 tasks)
