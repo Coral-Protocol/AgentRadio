@@ -90,8 +90,7 @@ under **L3** (AgentRadio, passive awareness).
 
 L3 reaches 22.5 % on both tasks by minute 10, when L2.5 is still at 5.1 % / 2.4 %: the same
 messages, delivered at the next step boundary instead of when an agent decides to look, pay off
-earliest. One run per cell. Code: [`multi_agent/programbench/`](multi_agent/programbench/),
-figure script: [`figures/plot_pb_curves.py`](figures/plot_pb_curves.py).
+earliest. One run per cell. Code: [`multi_agent/programbench/`](multi_agent/programbench/).
 
 ## 📣 News
 
